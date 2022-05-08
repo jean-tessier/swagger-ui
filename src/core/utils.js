@@ -498,7 +498,7 @@ function validateValueBySchema(value, schema, requiredByParam, bypassRequiredChe
     }
     if(schema && schema.has("properties")) {
       schema.get("properties").forEach((val, key) => {
-        const errs = validateValueBySchema(objectVal[key], val, false, bypassRequiredCheck, parameterContentMediaType)
+        const errs = validateValueBySchema(objectVal[key], val, !!requiredBySchema && typeof requiredBySchema !== 'boolean' && requiredBySchema.includes(key), bypassRequiredCheck, parameterContentMediaType)
         errors.push(...errs
           .map((error) => ({ propKey: key, error })))
       })
@@ -596,9 +596,7 @@ function validateValueBySchema(value, schema, requiredByParam, bypassRequiredChe
 
 // validation of parameters before execute
 export const validateParam = (param, value, { isOAS3 = false, bypassRequiredCheck = false } = {}) => {
-
   let paramRequired = param.get("required")
-
   let { schema: paramDetails, parameterContentMediaType } = getParameterSchema(param, { isOAS3 })
 
   return validateValueBySchema(value, paramDetails, paramRequired, bypassRequiredCheck, parameterContentMediaType)

@@ -5,6 +5,7 @@ module.exports = {
   testEnvironment: 'jsdom',
   testMatch: [
     '**/test/unit/*.js?(x)',
+    // '**/test/unit/core/utils.js',
     '**/test/unit/**/*.js?(x)',
   ],
   setupFilesAfterEnv: ['<rootDir>/test/unit/setup.js'],
@@ -17,5 +18,6 @@ module.exports = {
     '<rootDir>/test/unit/components/online-validator-badge.jsx',
     '<rootDir>/test/unit/components/live-response.jsx',
   ],
-  silent: true, // set to `false` to allow console.* calls to be printed
+  // testNamePattern: 'validateParam validates required in schema',
+  silent: false, // set to `false` to allow console.* calls to be printed
 };

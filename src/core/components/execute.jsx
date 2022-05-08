@@ -1,5 +1,7 @@
 import React, { Component } from "react"
 import PropTypes from "prop-types"
+import { validateParam } from "../utils"
+import { specJsonWithResolvedSubtrees } from "../plugins/spec/selectors"
 
 export default class Execute extends Component {
 
@@ -17,12 +19,13 @@ export default class Execute extends Component {
 
   handleValidateParameters = () => {
     let { specSelectors, specActions, path, method } = this.props
-    specActions.validateParams([path, method])
+    const res = specActions.validateParams([path, method])
+
     return specSelectors.validateBeforeExecute([path, method])
   }
 
   handleValidateRequestBody = () => {
-    let { path, method, specSelectors, oas3Selectors, oas3Actions } = this.props
+    let { path, method, specSelectors, specActions, oas3Selectors, oas3Actions, operation } = this.props
     let validationErrors = {
       missingBodyValue: false,
       missingRequiredKeys: []
@@ -34,6 +37,7 @@ export default class Execute extends Component {
     let oas3ValidateBeforeExecuteSuccess = oas3Selectors.validateBeforeExecute([path, method])
     let oas3RequestContentType = oas3Selectors.requestContentType(path, method)
 
+
     if (!oas3ValidateBeforeExecuteSuccess) {
       validationErrors.missingBodyValue = true
       oas3Actions.setRequestBodyValidateError({ path, method, validationErrors })
@@ -42,6 +46,24 @@ export default class Execute extends Component {
     if (!oas3RequiredRequestBodyContentType) {
       return true
     }
+    // const op = specJsonWithResolvedSubtrees(state)
+    if (oas3RequestContentType === "application/json") {
+      try {
+        oas3RequestBodyValue = JSON.parse(oas3RequestBodyValue)
+      } catch (e) {
+        validationErrors.malformattedBodyValue = true
+        oas3Actions.setRequestBodyValidateError({ path, method, validationErrors })
+        return false
+      }
+    }
+
+    oas3Actions.validateRequestBody({ pathMethod: [path, method], requestBodyParam: operation.get("requestBody") })
+    const errs = oas3Selectors.requestBodyErrors(path, method)
+
+    if (errs?.length > 0) {
+      return false
+    }
+
     let missingRequiredKeys = oas3Selectors.validateShallowRequired({
       oas3RequiredRequestBodyContentType,
       oas3RequestContentType,
@@ -53,7 +75,9 @@ export default class Execute extends Component {
     missingRequiredKeys.forEach((missingKey) => {
       validationErrors.missingRequiredKeys.push(missingKey)
     })
+
     oas3Actions.setRequestBodyValidateError({ path, method, validationErrors })
+    errs = oas3Selectors.requestBodyErrors(path, method)
     return false
   }
 

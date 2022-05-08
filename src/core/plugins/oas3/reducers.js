@@ -1,4 +1,5 @@
 import { fromJS, Map } from "immutable"
+import { validateParam } from "core/utils"
 
 import {
   UPDATE_SELECTED_SERVER,
@@ -10,7 +11,7 @@ import {
   UPDATE_RESPONSE_CONTENT_TYPE,
   SET_REQUEST_BODY_VALIDATE_ERROR,
   CLEAR_REQUEST_BODY_VALIDATE_ERROR,
-  CLEAR_REQUEST_BODY_VALUE, UPDATE_REQUEST_BODY_VALUE_RETAIN_FLAG,
+  CLEAR_REQUEST_BODY_VALUE, UPDATE_REQUEST_BODY_VALUE_RETAIN_FLAG, VALIDATE_REQUEST_BODY,
 } from "./actions"
 
 export default {
@@ -72,9 +73,26 @@ export default {
       // context: is application/json or application/xml, where typeof (missing) bodyValue = String
       return state.setIn(["requestData", path, method, "errors"], fromJS(errors))
     }
+
+    if (validationErrors.malformattedBodyValue) {
+      // context: is application/json, where typeof (malformatted) bodyValue = String
+      return state.setIn(["requestData", path, method, "errors"], fromJS(["Request body string value must be valid JSON"]))
+    }
+
     if (validationErrors.missingRequiredKeys && validationErrors.missingRequiredKeys.length > 0) {
       // context: is application/x-www-form-urlencoded, with list of missing keys
       const { missingRequiredKeys } = validationErrors
+      if (typeof state.getIn(["requestData", path, method, "bodyValue"]) === "string") {
+        const errorsObj = missingRequiredKeys.reduce((prev, curr) => {
+          return prev.concat([{
+            propKey: curr,
+            error: errors[0],
+          }])
+        }, [])
+
+        return state.setIn(["requestData", path, method, "errors"], fromJS(errorsObj))
+      }
+
       return state.updateIn(["requestData", path, method, "bodyValue"], fromJS({}), missingKeyValues => {
         return missingRequiredKeys.reduce((bodyValue, currentMissingKey) => {
           return bodyValue.setIn([currentMissingKey, "errors"], fromJS(errors))
@@ -109,5 +127,27 @@ export default {
       return state.setIn(["requestData", path, method, "bodyValue"], "")
     }
     return state.setIn(["requestData", path, method, "bodyValue"], Map())
+  },
+  [VALIDATE_REQUEST_BODY]: (state, { payload: { pathMethod, requestBodyParam, bypassRequiredCheck }}) => {
+    let [path, method] = pathMethod
+    const requestBodyValue = state.getIn(["requestData", path, method, "bodyValue"])
+
+    const validationErrors = validateParam(requestBodyParam, requestBodyValue, { isOAS3: true, bypassRequiredCheck })
+
+    if (typeof requestBodyValue === "string") {
+      return state.setIn(["requestData", path, method, "errors"], fromJS(validationErrors))
+    }
+
+    return state.updateIn(["requestData", path, method, "bodyValue"], fromJS({}), bodyValues => {
+      return validationErrors.reduce((bodyValue, curr) => {
+        return bodyValue.setIn([curr, "errors"], fromJS(curr))
+      }, bodyValues)  
+    })
+    // return state.updateIn(["requestData", path, method, "bodyValue"], fromJS({}), bodyValues => {
+    //   return valueKeys.reduce((bodyValue, curr) => {
+    //     return bodyValue.setIn([curr, "errors"], fromJS([]))
+    //   }, bodyValues)
+    // })
+    // return state.setIn(["requestData", path, method, ""])
   }
 }

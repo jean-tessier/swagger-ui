@@ -1,4 +1,4 @@
-import { OrderedMap, Map, List } from "immutable"
+import { OrderedMap, Map, List, fromJS } from "immutable"
 import { isOAS3 as isOAS3Helper } from "./helpers"
 import { getDefaultRequestBodyValue } from "./components/request-body"
 import { stringify } from "../../utils"
@@ -196,6 +196,12 @@ export const validateBeforeExecute = validateRequestBodyIsRequired(
 export const validateShallowRequired = (state, { oas3RequiredRequestBodyContentType, oas3RequestContentType, oas3RequestBodyValue} ) => {
   let missingRequiredKeys = []
   // context: json => String; urlencoded, form-data => Map
+  const bodyIsString = oas3RequestContentType === "application/json"
+
+  if (bodyIsString) {
+    oas3RequestBodyValue = fromJS(oas3RequestBodyValue)
+  }
+
   if (!Map.isMap(oas3RequestBodyValue)) {
     return missingRequiredKeys
   }
@@ -212,7 +218,7 @@ export const validateShallowRequired = (state, { oas3RequiredRequestBodyContentT
     }
   })
   requiredKeys.forEach((key) => {
-    let requiredKeyValue = oas3RequestBodyValue.getIn([key, "value"])
+    let requiredKeyValue = oas3RequestBodyValue.getIn([key, "value"]) || (bodyIsString && !!oas3RequestBodyValue.get(key))
     if (!requiredKeyValue) {
       missingRequiredKeys.push(key)
     }

@@ -48,26 +48,26 @@ export default class ParamBody extends PureComponent {
   }
 
   updateValues = (props) => {
-    let { param, isExecute, consumesValue="" } = props
+    let { param, isExecute, consumesValue = "" } = props
     let isXml = /xml/i.test(consumesValue)
     let isJson = /json/i.test(consumesValue)
     let paramValue = isXml ? param.get("value_xml") : param.get("value")
 
-    if ( paramValue !== undefined ) {
+    if (paramValue !== undefined) {
       let val = !paramValue && isJson ? "{}" : paramValue
       this.setState({ value: val })
-      this.onChange(val, {isXml: isXml, isEditBox: isExecute})
+      this.onChange(val, { isXml: isXml, isEditBox: isExecute })
     } else {
       if (isXml) {
-        this.onChange(this.sample("xml"), {isXml: isXml, isEditBox: isExecute})
+        this.onChange(this.sample("xml"), { isXml: isXml, isEditBox: isExecute })
       } else {
-        this.onChange(this.sample(), {isEditBox: isExecute})
+        this.onChange(this.sample(), { isEditBox: isExecute })
       }
     }
   }
 
   sample = (xml) => {
-    let { param, fn:{inferSchema} } = this.props
+    let { param, fn: { inferSchema } } = this.props
     let schema = inferSchema(param.toJS())
 
     return getSampleSchema(schema, xml, {
@@ -76,20 +76,20 @@ export default class ParamBody extends PureComponent {
   }
 
   onChange = (value, { isEditBox, isXml }) => {
-    this.setState({value, isEditBox})
+    this.setState({ value, isEditBox })
     this._onChange(value, isXml)
   }
 
   _onChange = (val, isXml) => { (this.props.onChange || NOOP)(val, isXml) }
 
   handleOnChange = e => {
-    const {consumesValue} = this.props
+    const { consumesValue } = this.props
     const isXml = /xml/i.test(consumesValue)
     const inputValue = e.target.value
-    this.onChange(inputValue, {isXml, isEditBox: this.state.isEditBox})
+    this.onChange(inputValue, { isXml, isEditBox: this.state.isEditBox })
   }
 
-  toggleIsEditBox = () => this.setState( state => ({isEditBox: !state.isEditBox}))
+  toggleIsEditBox = () => this.setState(state => ({ isEditBox: !state.isEditBox }))
 
   render() {
     let {
@@ -123,26 +123,26 @@ export default class ParamBody extends PureComponent {
       <div className="body-param" data-param-name={param.get("name")} data-param-in={param.get("in")}>
         {
           isEditBox && isExecute
-            ? <TextArea className={ "body-param__text" + ( errors.count() ? " invalid" : "")} value={value} onChange={ this.handleOnChange }/>
+            ? <TextArea className={"body-param__text" + (errors.count() ? " invalid" : "")} value={value} onChange={this.handleOnChange} />
             : (value && <HighlightCode className="body-param__example"
-                          language={ language }
-                          getConfigs={ getConfigs }
-                          value={ value }/>)
+              language={language}
+              getConfigs={getConfigs}
+              value={value} />)
         }
         <div className="body-param-options">
           {
             !isExecute ? null
-                       : <div className="body-param-edit">
-                        <Button className={isEditBox ? "btn cancel body-param__example-edit" : "btn edit body-param__example-edit"}
-                                 onClick={this.toggleIsEditBox}>{ isEditBox ? "Cancel" : "Edit"}
-                         </Button>
-                         </div>
+              : <div className="body-param-edit">
+                <Button className={isEditBox ? "btn cancel body-param__example-edit" : "btn edit body-param__example-edit"}
+                  onClick={this.toggleIsEditBox}>{isEditBox ? "Cancel" : "Edit"}
+                </Button>
+              </div>
           }
           <label htmlFor="">
             <span>Parameter content type</span>
             <ContentType
-              value={ consumesValue }
-              contentTypes={ consumes }
+              value={consumesValue}
+              contentTypes={consumes}
               onChange={onChangeConsumes}
               className="body-param-content-type"
               ariaLabel="Parameter content type" />

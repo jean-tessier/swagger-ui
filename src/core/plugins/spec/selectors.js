@@ -305,16 +305,30 @@ export const parameterWithMetaByIdentity = (state, pathMethod, param) => {
   const opParams = specJsonWithResolvedSubtrees(state).getIn(["paths", ...pathMethod, "parameters"], OrderedMap())
   const metaParams = state.getIn(["meta", "paths", ...pathMethod, "parameters"], OrderedMap())
 
-  const mergedParams = opParams.map((currentParam) => {
-    const inNameKeyedMeta = metaParams.get(`${param.get("in")}.${param.get("name")}`)
-    const hashKeyedMeta = metaParams.get(`${param.get("in")}.${param.get("name")}.hash-${param.hashCode()}`)
-    return OrderedMap().merge(
-      currentParam,
-      inNameKeyedMeta,
-      hashKeyedMeta
-    )
-  })
-  return mergedParams.find(curr => curr.get("in") === param.get("in") && curr.get("name") === param.get("name"), OrderedMap())
+  const rawParam = opParams.find(curr => {
+    return curr.get("in") === param.get("in") && curr.get("name") === param.get("name")
+  }, OrderedMap())
+
+  const nameKeyedMetaParam = metaParams.get(`${rawParam.get("in")}.${rawParam.get("name")}`)
+  const hashKeyedMetaParam = metaParams.get(`${rawParam.get("in")}.${rawParam.get("name")}.hash-${rawParam.hashCode()}`)
+
+  const mergedParams = OrderedMap().merge(
+    rawParam,
+    nameKeyedMetaParam,
+    hashKeyedMetaParam,
+  )
+
+  return mergedParams
+  // const mergedParams = opParams.map((currentParam) => {
+  //   const inNameKeyedMeta = metaParams.get(`${param.get("in")}.${param.get("name")}`)
+  //   const hashKeyedMeta = metaParams.get(`${param.get("in")}.${param.get("name")}.hash-${param.hashCode()}`)
+  //   return OrderedMap().merge(
+  //     currentParam,
+  //     inNameKeyedMeta,
+  //     hashKeyedMeta
+  //   )
+  // })
+  // return mergedParams.find(curr => curr.get("in") === param.get("in") && curr.get("name") === param.get("name"), OrderedMap())
 }
 
 export const parameterInclusionSettingFor = (state, pathMethod, paramName, paramIn) => {

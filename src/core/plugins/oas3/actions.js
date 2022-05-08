@@ -12,6 +12,7 @@ export const UPDATE_SERVER_VARIABLE_VALUE = "oas3_set_server_variable_value"
 export const SET_REQUEST_BODY_VALIDATE_ERROR = "oas3_set_request_body_validate_error"
 export const CLEAR_REQUEST_BODY_VALIDATE_ERROR = "oas3_clear_request_body_validate_error"
 export const CLEAR_REQUEST_BODY_VALUE = "oas3_clear_request_body_value"
+export const VALIDATE_REQUEST_BODY = "oas3_validate_request_body"
 
 export function setSelectedServer (selectedServerUrl, namespace) {
   return {
@@ -95,5 +96,12 @@ export const clearRequestBodyValue = ({ pathMethod }) => {
   return {
     type:  CLEAR_REQUEST_BODY_VALUE,
     payload: { pathMethod }
+  }
+}
+
+export const validateRequestBody = ({ pathMethod, requestBodyParam, bypassRequiredCheck = false }) => {
+  return {
+    type: VALIDATE_REQUEST_BODY,
+    payload: { pathMethod, requestBodyParam, bypassRequiredCheck }
   }
 }

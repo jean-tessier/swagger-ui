@@ -1,4 +1,4 @@
-import { Map, fromJS } from "immutable"
+import { Map, fromJS, OrderedMap } from "immutable"
 import {
   mapToList,
   parseSearch,
@@ -39,7 +39,7 @@ import {
 } from "core/utils/url"
 
 import win from "core/window"
-import { afterAll, beforeAll, expect, jest } from "@jest/globals"
+import { afterAll, beforeAll, expect, it, jest } from "@jest/globals"
 
 describe("utils", () => {
 
@@ -353,19 +353,6 @@ describe("utils", () => {
     const assertValidateParam = (param, value, expectedError) => {
       // Swagger 2.0 version
       result = validateParam( fromJS(param), fromJS(value))
-      expect( result ).toEqual( expectedError )
-
-      // OAS3 version, using `schema` sub-object
-      let oas3Param = {
-        required: param.required,
-        schema: {
-          ...param,
-          required: undefined
-        }
-      }
-      result = validateParam( fromJS(oas3Param), fromJS(value), {
-        isOAS3: true
-      })
       expect( result ).toEqual( expectedError )
     }
 
@@ -1037,6 +1024,41 @@ describe("utils", () => {
       }
       value = 10
       assertValidateParam(param, value, [])
+    })
+
+    // These tests left dependent on passage of each type (integer, string, etc)'s validation tests. As spying
+    // on the "private" validateValueBySchema function would take new dependencies, to my knowledge,
+    // and creating a test for each type as an independent case would be redundant and add more code to read.
+    it.each`
+    propertyIsRequired  | propertyType  | valueProvided           | expectedError
+    ${true}             | ${"string"}   | ${null}                 | ${"Required field is not provided"}
+    ${false}            | ${"string"}   | ${null}                 | ${undefined}
+    ${true}             | ${"string"}   | ${"\"string value1\""}  | ${undefined}
+    ${false}            | ${"string"}   | ${"\"string value2\""}  | ${undefined}
+    `("validates required properties in object schema in body $valueProvided", ({ propertyIsRequired, propertyType, valueProvided, expectedError }) => {
+      const PROPERTY_KEY = "someProperty"
+
+      param = {
+        in: "body",
+        schema: {
+          type: "object",
+          required: propertyIsRequired ? [
+            PROPERTY_KEY,
+          ] : [],
+          properties: {
+            [PROPERTY_KEY]: {
+              type: propertyType,
+            },
+          },
+        }
+      }
+
+      value = valueProvided !== null ? `{\n  "${PROPERTY_KEY}": ${valueProvided}\n}` : "{}"
+
+      assertValidateParam(param, value, expectedError ? [{
+        propKey: PROPERTY_KEY,
+        error: expectedError,
+      }]: [])
     })
   })
 
